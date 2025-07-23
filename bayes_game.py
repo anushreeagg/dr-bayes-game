@@ -95,45 +95,46 @@ st.set_page_config(page_title="Dr. Bayes: Diagnose or Dismiss?", page_icon="🧑
 st.markdown("""
 <style>
 body, .stApp {
-    background: #f5f5f5;
+    background: #f7fafd;
     color: #222 !important;
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
 }
 .stSlider { margin-bottom: 1.5em; }
 .stButton>button {
-    background: linear-gradient(90deg, #ffb347 0%, #ffcc33 100%);
-    color: #222;
+    background: #2563eb;
+    color: #fff !important;
     border-radius: 8px;
     padding: 0.6em 2em;
-    font-size: 1.15em;
-    font-weight: bold;
-    box-shadow: 0 2px 8px #0001;
+    font-size: 1.1em;
+    font-weight: 500;
     border: none;
+    box-shadow: none;
     transition: background 0.2s;
 }
-.stButton>button:active { background: #ffe066; }
+.stButton>button:active { background: #1e40af; }
 .st-bb { font-family: 'Source Code Pro', monospace; }
 .spinner { display: flex; justify-content: center; align-items: center; height: 60px; }
 .spinner:after {
     content: '';
     width: 32px; height: 32px;
-    border: 4px solid #555;
-    border-top: 4px solid #f5f5f5;
+    border: 4px solid #2563eb;
+    border-top: 4px solid #f7fafd;
     border-radius: 50%;
     animation: spin 1s linear infinite;
 }
 @keyframes spin { 100% { transform: rotate(360deg); } }
 .scenario-card {
-    background: #fffbe6;
+    background: #f0f4f8;
     border-radius: 12px;
     padding: 1.5em 1.5em 1em 1.5em;
     box-shadow: 0 2px 12px #0001;
     margin-bottom: 2em;
+    border-left: 6px solid #2563eb;
 }
 .slider-label {
     font-size: 1.1em;
     font-weight: 600;
-    color: #e67e22;
+    color: #2563eb;
     margin-bottom: 0.2em;
     margin-top: 1em;
 }
@@ -143,7 +144,7 @@ body, .stApp {
 SCENARIO_ICONS = ["🌡️", "🍬", "🧬", "🧠", "💊"]
 
 st.title("🧑‍⚕️ Dr. Bayes: Diagnose or Dismiss?")
-st.write("Estimate the probability that an observation came from Group A. Outsmart Dr. Bayes and collect all the trophies! 🏆")
+st.write("Estimate the probability that an observation came from Group A. Outsmart Dr. Bayes and collect all the trophies!")
 
 if 'step' not in st.session_state:
     st.session_state.step = 0
@@ -160,9 +161,8 @@ def reset_game():
     st.session_state.total_score = 0
 
 if st.session_state.step >= len(SCENARIOS):
-    st.balloons()
-    st.success(f"🎉 Game Over! Your final score: {sum(st.session_state.scores)} / 50")
-    st.write(":trophy: **Thanks for playing Dr. Bayes!**")
+    st.success(f"Game Over! Your final score: {sum(st.session_state.scores)} / 50")
+    st.write("**Thanks for playing Dr. Bayes!**")
     if st.button("Play Again"):
         reset_game()
     st.stop()
@@ -176,7 +176,7 @@ st.progress(progress, text=f"Scenario {st.session_state.step+1} of {len(SCENARIO
 with st.container():
     st.markdown(f'<div class="scenario-card"><span style="font-size:2em;">{SCENARIO_ICONS[st.session_state.step]}</span> <span style="font-size:1.5em;font-weight:700;">Scenario {st.session_state.step+1}: {sc["title"]}</span><br><span style="font-size:1.1em;">{sc["description"]}</span></div>', unsafe_allow_html=True)
 
-st.markdown('<div class="slider-label">🔢 Your estimate: Probability it\'s Group A</div>', unsafe_allow_html=True)
+st.markdown('<div class="slider-label">Your estimate: Probability it\'s Group A</div>', unsafe_allow_html=True)
 user_guess = st.slider(
     " ",  # Hide default label
     min_value=0,
@@ -212,14 +212,15 @@ if st.session_state.show_result:
     with col2:
         st.metric("Round score", f"{score} / 10")
         st.metric("Total score so far", f"{st.session_state.total_score} / 50")
+    # Subtle, text-based feedback only
     if abs(user_prob - true_prob) <= 0.02:
-        st.success("🎯 Amazing! You nailed it. Dr. Bayes tips his hat to you!")
+        st.success("Excellent! Your Bayesian intuition is spot on.")
     elif abs(user_prob - true_prob) <= 0.05:
-        st.info("🤏 Very close! Great intuition.")
+        st.info("Very close! You're thinking like Dr. Bayes.")
     elif abs(user_prob - true_prob) <= 0.1:
-        st.warning("👍 Not bad, but you can get closer!")
+        st.warning("Not bad, but you can get even closer.")
     else:
-        st.error("🧪 Keep practicing your Bayesian skills!")
+        st.error("Keep practicing your Bayesian skills!")
     if st.button("Next Scenario"):
         st.session_state.step += 1
         st.session_state.show_result = False
