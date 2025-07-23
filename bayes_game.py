@@ -102,7 +102,7 @@ body, .stApp {
 .stSlider { margin-bottom: 1.5em; }
 .stButton>button {
     background: #2563eb;
-    color: #fff !important;
+    color: #222 !important;
     border-radius: 8px;
     padding: 0.6em 2em;
     font-size: 1.1em;
@@ -138,12 +138,16 @@ body, .stApp {
     margin-bottom: 0.2em;
     margin-top: 1em;
 }
+/* Ensure metric text is dark */
+[data-testid="stMetricValue"], [data-testid="stMetricLabel"] {
+    color: #222 !important;
+}
 </style>
 """, unsafe_allow_html=True)
 
 SCENARIO_ICONS = ["🌡️", "🍬", "🧬", "🧠", "💊"]
 
-st.title("🧑‍⚕️ Dr. Bayes: Diagnose or Dismiss?")
+st.title("👩🏻‍⚕️ Dr. Bayes: Diagnose or Dismiss?")
 st.write("Estimate the probability that an observation came from Group A. Outsmart Dr. Bayes and collect all the trophies!")
 
 if 'step' not in st.session_state:
