@@ -195,16 +195,27 @@ if st.session_state.show_result:
         st.session_state.score += 1
         st.session_state.level += 1
         st.session_state.status = get_status(st.session_state.level)
+        st.markdown(f"**Bayesian Probability of Disease:** {int(round(post*100))}%")
+        st.markdown(f"**You chose:** {'Diagnose' if st.session_state.last_decision == 'A' else 'Dismiss'}")
+        st.markdown(f"**True diagnosis:** {'Disease' if st.session_state.patient_true == 'A' else 'Healthy'}")
+        if st.button("Reveal Insight", key=f"reveal_{st.session_state.level}"):
+            st.session_state.revealed = True
+        if st.session_state.revealed:
+            st.info("Bayes' Theorem: P(Disease | test) = [P(test | Disease) * P(Disease)] / [P(test | Disease) * P(Disease) + P(test | Healthy) * P(Healthy)]")
+        st.markdown(f"<div style='font-size:1.05em;color:#888;margin-top:0.7em;'>Tip: {lvl['clue'](val)}</div>", unsafe_allow_html=True)
+        if st.button("Next Level", key=f"next_{st.session_state.level}"):
+            reset_patient_state()
+            st.experimental_rerun()
     else:
         st.error(f"Incorrect. You remain a {get_status(st.session_state.level)}. Try again!")
-    st.markdown(f"**Bayesian Probability of Disease:** {int(round(post*100))}%")
-    st.markdown(f"**You chose:** {'Diagnose' if st.session_state.last_decision == 'A' else 'Dismiss'}")
-    st.markdown(f"**True diagnosis:** {'Disease' if st.session_state.patient_true == 'A' else 'Healthy'}")
-    if st.button("Reveal Insight", key=f"reveal_{st.session_state.level}"):
-        st.session_state.revealed = True
-    if st.session_state.revealed:
-        st.info("Bayes' Theorem: P(Disease | test) = [P(test | Disease) * P(Disease)] / [P(test | Disease) * P(Disease) + P(test | Healthy) * P(Healthy)]")
-    st.markdown(f"<div style='font-size:1.05em;color:#888;margin-top:0.7em;'>Tip: {lvl['clue'](val)}</div>", unsafe_allow_html=True)
-    if st.button("Next Patient", key=f"next_{st.session_state.level}"):
-        reset_patient_state()
-        st.experimental_rerun() 
+        st.markdown(f"**Bayesian Probability of Disease:** {int(round(post*100))}%")
+        st.markdown(f"**You chose:** {'Diagnose' if st.session_state.last_decision == 'A' else 'Dismiss'}")
+        st.markdown(f"**True diagnosis:** {'Disease' if st.session_state.patient_true == 'A' else 'Healthy'}")
+        if st.button("Reveal Insight", key=f"reveal_{st.session_state.level}"):
+            st.session_state.revealed = True
+        if st.session_state.revealed:
+            st.info("Bayes' Theorem: P(Disease | test) = [P(test | Disease) * P(Disease)] / [P(test | Disease) * P(Disease) + P(test | Healthy) * P(Healthy)]")
+        st.markdown(f"<div style='font-size:1.05em;color:#888;margin-top:0.7em;'>Tip: {lvl['clue'](val)}</div>", unsafe_allow_html=True)
+        if st.button("Try Again", key=f"tryagain_{st.session_state.level}"):
+            reset_patient_state()
+            st.experimental_rerun() 
