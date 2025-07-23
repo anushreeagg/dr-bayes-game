@@ -89,6 +89,14 @@ def animated_bar(label, value, minv, maxv, unit, color="#2563eb"):
 def get_status(level):
     return DOCTOR_STATUSES[min(level, len(DOCTOR_STATUSES)-1)]
 
+def reset_patient_state():
+    st.session_state.show_result = False
+    st.session_state.patient_val = None
+    st.session_state.patient_true = None
+    st.session_state.last_posterior = None
+    st.session_state.last_decision = None
+    st.session_state.revealed = False
+
 # --- Streamlit App ---
 st.set_page_config(page_title="Dr. Bayes: The Diagnosis Arena", page_icon="👩🏻‍⚕️", layout="centered")
 st.markdown("""
@@ -198,10 +206,5 @@ if st.session_state.show_result:
         st.info("Bayes' Theorem: P(Disease | test) = [P(test | Disease) * P(Disease)] / [P(test | Disease) * P(Disease) + P(test | Healthy) * P(Healthy)]")
     st.markdown(f"<div style='font-size:1.05em;color:#888;margin-top:0.7em;'>Tip: {lvl['clue'](val)}</div>", unsafe_allow_html=True)
     if st.button("Next Patient", key=f"next_{st.session_state.level}"):
-        st.session_state.show_result = False
-        st.session_state.patient_val = None
-        st.session_state.patient_true = None
-        st.session_state.last_posterior = None
-        st.session_state.last_decision = None
-        st.session_state.revealed = False
+        reset_patient_state()
         st.experimental_rerun() 
