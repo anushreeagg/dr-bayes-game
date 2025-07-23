@@ -101,13 +101,17 @@ body, .stApp {
 }
 .stSlider { margin-bottom: 1.5em; }
 .stButton>button {
-    background: #555;
-    color: #fff;
-    border-radius: 6px;
-    padding: 0.5em 1.5em;
-    font-size: 1.1em;
+    background: linear-gradient(90deg, #ffb347 0%, #ffcc33 100%);
+    color: #222;
+    border-radius: 8px;
+    padding: 0.6em 2em;
+    font-size: 1.15em;
+    font-weight: bold;
+    box-shadow: 0 2px 8px #0001;
+    border: none;
+    transition: background 0.2s;
 }
-.stButton>button:active { background: #333; }
+.stButton>button:active { background: #ffe066; }
 .st-bb { font-family: 'Source Code Pro', monospace; }
 .spinner { display: flex; justify-content: center; align-items: center; height: 60px; }
 .spinner:after {
@@ -119,11 +123,27 @@ body, .stApp {
     animation: spin 1s linear infinite;
 }
 @keyframes spin { 100% { transform: rotate(360deg); } }
+.scenario-card {
+    background: #fffbe6;
+    border-radius: 12px;
+    padding: 1.5em 1.5em 1em 1.5em;
+    box-shadow: 0 2px 12px #0001;
+    margin-bottom: 2em;
+}
+.slider-label {
+    font-size: 1.1em;
+    font-weight: 600;
+    color: #e67e22;
+    margin-bottom: 0.2em;
+    margin-top: 1em;
+}
 </style>
 """, unsafe_allow_html=True)
 
+SCENARIO_ICONS = ["🌡️", "🍬", "🧬", "🧠", "💊"]
+
 st.title("🧑‍⚕️ Dr. Bayes: Diagnose or Dismiss?")
-st.write("Estimate the probability that an observation came from Group A. Can you outsmart Dr. Bayes?")
+st.write("Estimate the probability that an observation came from Group A. Outsmart Dr. Bayes and collect all the trophies! 🏆")
 
 if 'step' not in st.session_state:
     st.session_state.step = 0
@@ -140,7 +160,8 @@ def reset_game():
     st.session_state.total_score = 0
 
 if st.session_state.step >= len(SCENARIOS):
-    st.success(f"Game Over! Your final score: {sum(st.session_state.scores)} / 50")
+    st.balloons()
+    st.success(f"🎉 Game Over! Your final score: {sum(st.session_state.scores)} / 50")
     st.write(":trophy: **Thanks for playing Dr. Bayes!**")
     if st.button("Play Again"):
         reset_game()
@@ -148,11 +169,16 @@ if st.session_state.step >= len(SCENARIOS):
 
 sc = SCENARIOS[st.session_state.step]
 
-st.header(f"Scenario {st.session_state.step+1}: {sc['title']}")
-st.write(sc['description'])
+# Progress bar and scenario icon
+progress = (st.session_state.step) / len(SCENARIOS)
+st.progress(progress, text=f"Scenario {st.session_state.step+1} of {len(SCENARIOS)}")
 
+with st.container():
+    st.markdown(f'<div class="scenario-card"><span style="font-size:2em;">{SCENARIO_ICONS[st.session_state.step]}</span> <span style="font-size:1.5em;font-weight:700;">Scenario {st.session_state.step+1}: {sc["title"]}</span><br><span style="font-size:1.1em;">{sc["description"]}</span></div>', unsafe_allow_html=True)
+
+st.markdown('<div class="slider-label">🔢 Your estimate: Probability it\'s Group A</div>', unsafe_allow_html=True)
 user_guess = st.slider(
-    "Your estimate: Probability it's Group A",
+    " ",  # Hide default label
     min_value=0,
     max_value=100,
     value=50,
@@ -179,18 +205,21 @@ if st.session_state.show_result:
     )
     user_prob = st.session_state.guesses[-1] / 100
     score = st.session_state.scores[-1]
-    st.markdown(f"**True probability:** {format_pct(true_prob)}")
-    st.markdown(f"**Your guess:** {format_pct(user_prob)}")
-    st.markdown(f"**Round score:** {score} / 10")
-    st.markdown(f"**Total score so far:** {st.session_state.total_score} / 50")
+    col1, col2 = st.columns(2)
+    with col1:
+        st.metric("True probability", format_pct(true_prob))
+        st.metric("Your guess", format_pct(user_prob))
+    with col2:
+        st.metric("Round score", f"{score} / 10")
+        st.metric("Total score so far", f"{st.session_state.total_score} / 50")
     if abs(user_prob - true_prob) <= 0.02:
-        st.success("Amazing! You nailed it.")
+        st.success("🎯 Amazing! You nailed it. Dr. Bayes tips his hat to you!")
     elif abs(user_prob - true_prob) <= 0.05:
-        st.info("Very close! Great intuition.")
+        st.info("🤏 Very close! Great intuition.")
     elif abs(user_prob - true_prob) <= 0.1:
-        st.warning("Not bad, but you can get closer!")
+        st.warning("👍 Not bad, but you can get closer!")
     else:
-        st.error("Keep practicing your Bayesian skills!")
+        st.error("🧪 Keep practicing your Bayesian skills!")
     if st.button("Next Scenario"):
         st.session_state.step += 1
         st.session_state.show_result = False
