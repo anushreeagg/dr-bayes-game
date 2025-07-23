@@ -1,3 +1,5 @@
 streamlit
+numpy
 scipy
-numpy 
+plotly
+pandas 
