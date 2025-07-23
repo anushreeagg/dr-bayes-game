@@ -95,78 +95,59 @@ st.set_page_config(page_title="Dr. Bayes: Diagnose or Dismiss?", page_icon="🧑
 st.markdown("""
 <style>
 body, .stApp {
-    background: #fdf6fa;
+    background: #f7fafd;
     color: #222 !important;
-    font-family: 'Nunito', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
 }
 .stSlider { margin-bottom: 1.5em; }
 .stButton>button {
-    background: linear-gradient(90deg, #ffb6b9 0%, #f8e1f4 100%);
-    color: #222 !important;
-    border-radius: 16px;
-    padding: 0.7em 2.2em;
-    font-size: 1.15em;
-    font-weight: 600;
+    background: #2563eb;
+    color: #fff !important;
+    border-radius: 8px;
+    padding: 0.6em 2em;
+    font-size: 1.1em;
+    font-weight: 500;
     border: none;
-    box-shadow: 0 2px 12px #ffb6b933;
-    transition: background 0.2s, box-shadow 0.2s;
+    box-shadow: none;
+    transition: background 0.2s;
 }
 .stButton>button:active, .stButton>button:hover {
-    background: linear-gradient(90deg, #f8e1f4 0%, #ffb6b9 100%);
-    box-shadow: 0 4px 16px #ffb6b955;
+    background: #1e40af;
 }
 .st-bb { font-family: 'Source Code Pro', monospace; }
 .spinner { display: flex; justify-content: center; align-items: center; height: 60px; }
 .spinner:after {
     content: '';
     width: 32px; height: 32px;
-    border: 4px solid #ffb6b9;
-    border-top: 4px solid #fdf6fa;
+    border: 4px solid #2563eb;
+    border-top: 4px solid #f7fafd;
     border-radius: 50%;
     animation: spin 1s linear infinite;
 }
 @keyframes spin { 100% { transform: rotate(360deg); } }
 .scenario-card {
-    background: #fff0f6;
-    border-radius: 18px;
-    padding: 1.7em 1.7em 1.2em 1.7em;
-    box-shadow: 0 4px 24px #ffb6b933;
+    background: #f0f4f8;
+    border-radius: 12px;
+    padding: 1.5em 1.5em 1em 1.5em;
+    box-shadow: 0 2px 12px #0001;
     margin-bottom: 2em;
-    border-left: 8px solid #ffb6b9;
+    border-left: 6px solid #2563eb;
 }
 .slider-label {
-    font-size: 1.2em;
-    font-weight: 700;
-    color: #ff6f91;
-    margin-bottom: 0.2em;
-    margin-top: 1em;
-    letter-spacing: 0.01em;
-}
-/* Custom feedback boxes */
-.bayes-feedback {
-    border-radius: 14px;
-    padding: 1em 1.2em;
-    margin: 1.2em 0 1.2em 0;
     font-size: 1.1em;
     font-weight: 600;
-    box-shadow: 0 2px 12px #ffb6b933;
-    display: flex;
-    align-items: center;
+    color: #2563eb;
+    margin-bottom: 0.2em;
+    margin-top: 1em;
 }
-.bayes-success { background: #e0ffe6; color: #1b5e20; border-left: 6px solid #4caf50; }
-.bayes-info { background: #e3f6fd; color: #01579b; border-left: 6px solid #03a9f4; }
-.bayes-warning { background: #fffbe6; color: #b26a00; border-left: 6px solid #ffd600; }
-.bayes-error { background: #ffe6ea; color: #b71c1c; border-left: 6px solid #ff1744; }
 [data-testid="stMetricValue"], [data-testid="stMetricLabel"] {
     color: #222 !important;
-    font-family: 'Nunito', sans-serif;
 }
 .stProgress > div > div > div > div {
-    background: linear-gradient(90deg, #ffb6b9 0%, #f8e1f4 100%);
+    background: #2563eb;
     border-radius: 8px;
 }
 </style>
-<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700&display=swap" rel="stylesheet">
 """, unsafe_allow_html=True)
 
 SCENARIO_ICONS = ["🌡️", "🍬", "🧬", "🧠", "💊"]
@@ -203,7 +184,7 @@ progress = (st.session_state.step) / len(SCENARIOS)
 st.progress(progress, text=f"Scenario {st.session_state.step+1} of {len(SCENARIOS)}")
 
 with st.container():
-    st.markdown(f'<div class="scenario-card"><span style="font-size:2.2em;">{SCENARIO_ICONS[st.session_state.step]}</span> <span style="font-size:1.5em;font-weight:700;">Scenario {st.session_state.step+1}: {sc["title"]}</span><br><span style="font-size:1.1em;">{sc["description"]}</span></div>', unsafe_allow_html=True)
+    st.markdown(f'<div class="scenario-card"><span style="font-size:2em;">{SCENARIO_ICONS[st.session_state.step]}</span> <span style="font-size:1.5em;font-weight:700;">Scenario {st.session_state.step+1}: {sc["title"]}</span><br><span style="font-size:1.1em;">{sc["description"]}</span></div>', unsafe_allow_html=True)
 
 st.markdown('<div class="slider-label">Your estimate: Probability it\'s Group A</div>', unsafe_allow_html=True)
 user_guess = st.slider(
@@ -212,7 +193,7 @@ user_guess = st.slider(
     max_value=100,
     value=50,
     step=1,
-    key=f"slider_{st.session_state.step}"
+    key=f"slider_{st.session_state.step}_{st.session_state.show_result}"
 )
 
 if st.button("Submit", key=f"submit_{st.session_state.step}"):
@@ -241,17 +222,15 @@ if st.session_state.show_result:
     with col2:
         st.metric("Round score", f"{score} / 10")
         st.metric("Total score so far", f"{st.session_state.total_score} / 50")
-    # Custom feedback boxes
-    feedback = ""
+    # Use Streamlit's default feedback boxes for accessibility
     if abs(user_prob - true_prob) <= 0.02:
-        feedback = '<div class="bayes-feedback bayes-success">🌟 Excellent! Your Bayesian intuition is spot on.</div>'
+        st.success("Excellent! Your Bayesian intuition is spot on.")
     elif abs(user_prob - true_prob) <= 0.05:
-        feedback = '<div class="bayes-feedback bayes-info">💡 Very close! You\'re thinking like Dr. Bayes.</div>'
+        st.info("Very close! You're thinking like Dr. Bayes.")
     elif abs(user_prob - true_prob) <= 0.1:
-        feedback = '<div class="bayes-feedback bayes-warning">✨ Not bad, but you can get even closer.</div>'
+        st.warning("Not bad, but you can get even closer.")
     else:
-        feedback = '<div class="bayes-feedback bayes-error">🩺 Keep practicing your Bayesian skills!</div>'
-    st.markdown(feedback, unsafe_allow_html=True)
+        st.error("Keep practicing your Bayesian skills!")
     if st.button("Next Scenario"):
         st.session_state.step += 1
         st.session_state.show_result = False
