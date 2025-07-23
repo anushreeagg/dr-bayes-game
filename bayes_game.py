@@ -94,13 +94,30 @@ st.set_page_config(page_title="Dr. Bayes: Diagnose or Dismiss?", page_icon="🧑
 
 st.markdown("""
 <style>
-body, .stApp { background: #f5f5f5; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif; }
+body, .stApp {
+    background: #f5f5f5;
+    color: #222 !important;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+}
 .stSlider { margin-bottom: 1.5em; }
-.stButton>button { background: #555; color: #fff; border-radius: 6px; padding: 0.5em 1.5em; font-size: 1.1em; }
+.stButton>button {
+    background: #555;
+    color: #fff;
+    border-radius: 6px;
+    padding: 0.5em 1.5em;
+    font-size: 1.1em;
+}
 .stButton>button:active { background: #333; }
 .st-bb { font-family: 'Source Code Pro', monospace; }
 .spinner { display: flex; justify-content: center; align-items: center; height: 60px; }
-.spinner:after { content: ''; width: 32px; height: 32px; border: 4px solid #555; border-top: 4px solid #f5f5f5; border-radius: 50%; animation: spin 1s linear infinite; }
+.spinner:after {
+    content: '';
+    width: 32px; height: 32px;
+    border: 4px solid #555;
+    border-top: 4px solid #f5f5f5;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
 @keyframes spin { 100% { transform: rotate(360deg); } }
 </style>
 """, unsafe_allow_html=True)
