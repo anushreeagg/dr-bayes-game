@@ -20,6 +20,7 @@ st.markdown("""
         .stApp {
             background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
             font-family: 'Inter', sans-serif;
+            color: #1f2937 !important;
         }
         
         .main-container {
@@ -84,7 +85,7 @@ st.markdown("""
             display: flex;
             align-items: center;
             justify-content: center;
-            color: white;
+            color: #1f2937 !important;
             font-weight: 600;
         }
         
@@ -119,7 +120,7 @@ st.markdown("""
         
         .timer {
             background: linear-gradient(135deg, #ef4444, #dc2626);
-            color: white;
+            color: #1f2937 !important;
             padding: 1rem;
             border-radius: 10px;
             text-align: center;
@@ -172,7 +173,7 @@ st.markdown("""
         
         .stButton > button {
             background: linear-gradient(135deg, #1e3c72, #2a5298);
-            color: white;
+            color: #1f2937 !important;
             border: none;
             border-radius: 10px;
             padding: 0.8rem 1.5rem;
@@ -237,6 +238,21 @@ st.markdown("""
             color: #1f2937;
             margin-bottom: 1rem;
             text-align: center;
+        }
+        
+        /* Ensure all text is visible */
+        .stMarkdown, .stText, .stInfo, .stSuccess, .stWarning, .stError {
+            color: #1f2937 !important;
+        }
+        
+        /* Fix button text color */
+        .stButton > button > div {
+            color: #1f2937 !important;
+        }
+        
+        /* Fix any white text in Streamlit components */
+        [data-testid="stText"], [data-testid="stMarkdown"] {
+            color: #1f2937 !important;
         }
     </style>
 """, unsafe_allow_html=True)
@@ -369,7 +385,7 @@ def create_ethical_popup(question, options):
     return f"""
     <div class="ethical-popup">
         <h3 style="color: #dc2626; margin-bottom: 1rem;">⚖️ Ethical Decision Required</h3>
-        <p style="font-size: 1.1rem; margin-bottom: 1.5rem;">{question}</p>
+        <p style="font-size: 1.1rem; margin-bottom: 1.5rem; color: #1f2937;">{question}</p>
     </div>
     """
 
@@ -392,18 +408,35 @@ def calculate_confidence(evidence, suspects):
     
     return [round((score / total_score) * 100, 1) for score in scores]
 
-# --- Session State Initialization ---
-if 'game_state' not in st.session_state:
-    st.session_state.game_state = 'menu'
-    st.session_state.current_level = 0
-    st.session_state.current_scene = 'intro'
-    st.session_state.collected_evidence = []
-    st.session_state.confidence = []
-    st.session_state.scores = {'accuracy': 0, 'speed': 0, 'integrity': 100}
-    st.session_state.level_scores = []
-    st.session_state.ethical_choice_made = False
-    st.session_state.start_time = None
-    st.session_state.timer_start = None
+def initialize_session_state():
+    """Initialize all session state variables to prevent attribute errors"""
+    if 'game_state' not in st.session_state:
+        st.session_state.game_state = 'menu'
+    if 'current_level' not in st.session_state:
+        st.session_state.current_level = 0
+    if 'current_scene' not in st.session_state:
+        st.session_state.current_scene = 'intro'
+    if 'collected_evidence' not in st.session_state:
+        st.session_state.collected_evidence = []
+    if 'confidence' not in st.session_state:
+        st.session_state.confidence = []
+    if 'scores' not in st.session_state:
+        st.session_state.scores = {'accuracy': 0, 'speed': 0, 'integrity': 100}
+    if 'level_scores' not in st.session_state:
+        st.session_state.level_scores = []
+    if 'ethical_choice_made' not in st.session_state:
+        st.session_state.ethical_choice_made = False
+    if 'start_time' not in st.session_state:
+        st.session_state.start_time = None
+    if 'timer_start' not in st.session_state:
+        st.session_state.timer_start = None
+    if 'user_decision' not in st.session_state:
+        st.session_state.user_decision = None
+    if 'current_ethical_choice' not in st.session_state:
+        st.session_state.current_ethical_choice = None
+
+# --- Initialize Session State ---
+initialize_session_state()
 
 # --- Main Game Interface ---
 st.markdown('<div class="main-container">', unsafe_allow_html=True)
@@ -419,6 +452,14 @@ if st.session_state.game_state == 'menu':
             st.session_state.game_state = 'playing'
             st.session_state.current_level = 0
             st.session_state.current_scene = 'intro'
+            st.session_state.collected_evidence = []
+            st.session_state.confidence = []
+            st.session_state.scores = {'accuracy': 0, 'speed': 0, 'integrity': 100}
+            st.session_state.ethical_choice_made = False
+            st.session_state.start_time = None
+            st.session_state.timer_start = None
+            st.session_state.user_decision = None
+            st.session_state.current_ethical_choice = None
             st.experimental_rerun()
         
         if st.button("📖 How to Play", key="how_to_play"):
@@ -458,6 +499,14 @@ elif st.session_state.game_state == 'instructions':
         st.session_state.game_state = 'playing'
         st.session_state.current_level = 0
         st.session_state.current_scene = 'intro'
+        st.session_state.collected_evidence = []
+        st.session_state.confidence = []
+        st.session_state.scores = {'accuracy': 0, 'speed': 0, 'integrity': 100}
+        st.session_state.ethical_choice_made = False
+        st.session_state.start_time = None
+        st.session_state.timer_start = None
+        st.session_state.user_decision = None
+        st.session_state.current_ethical_choice = None
         st.experimental_rerun()
 
 # Main Game
@@ -573,7 +622,8 @@ elif st.session_state.game_state == 'playing':
         with evidence_cols[0]:
             st.markdown("### 📊 Confidence Levels")
             for i, suspect in enumerate(level["suspects"]):
-                st.markdown(create_confidence_bar(suspect["name"], st.session_state.confidence[i], suspect["color"]), unsafe_allow_html=True)
+                confidence_value = st.session_state.confidence[i] if i < len(st.session_state.confidence) else 100/len(level["suspects"])
+                st.markdown(create_confidence_bar(suspect["name"], confidence_value, suspect["color"]), unsafe_allow_html=True)
         
         with evidence_cols[1]:
             st.markdown("### 🕵️ Collected Evidence")
@@ -640,7 +690,8 @@ elif st.session_state.game_state == 'playing':
         # Show final confidence levels
         st.markdown("### 📊 Final Confidence Levels")
         for i, suspect in enumerate(level["suspects"]):
-            st.markdown(create_confidence_bar(suspect["name"], st.session_state.confidence[i], suspect["color"]), unsafe_allow_html=True)
+            confidence_value = st.session_state.confidence[i] if i < len(st.session_state.confidence) else 100/len(level["suspects"])
+            st.markdown(create_confidence_bar(suspect["name"], confidence_value, suspect["color"]), unsafe_allow_html=True)
         
         # Decision buttons
         st.markdown("### 🤔 Your Verdict")
