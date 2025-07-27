@@ -436,10 +436,20 @@ def tutorial_modal():
     g = st.session_state.g
     if not g["show_tutorial"]:
         return
+    
+    # Use a simple centered container instead of a full-screen modal
     st.markdown(
         """
-        <div class="modal">
-          <div class="modal-inner">
+        <div style="
+            background: #1E293B; 
+            padding: 2.5rem; 
+            border-radius: 16px; 
+            max-width: 720px; 
+            margin: 2rem auto;
+            color: #E2E8F0;
+            border: 1px solid rgba(255,255,255,0.08);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+        ">
             <h2>Welcome to <em>The Lost Painting Heist</em> 🖼️</h2>
             <p>You must infer which guard stole the painting, using noisy, biased, or unethical evidence sources.</p>
             <ul>
@@ -452,7 +462,6 @@ def tutorial_modal():
             <div style="text-align: center; margin-top: 2rem;">
                 <p style="font-size: 1.1rem; font-weight: 600; color: #6366F1;">Click the button below to start!</p>
             </div>
-          </div>
         </div>
         """,
         unsafe_allow_html=True
