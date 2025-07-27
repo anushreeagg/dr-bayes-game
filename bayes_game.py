@@ -18,7 +18,7 @@ st.markdown("""
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
         
         .stApp {
-            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
             font-family: 'Inter', sans-serif;
             color: #1f2937 !important;
         }
@@ -28,7 +28,7 @@ st.markdown("""
             border-radius: 20px;
             padding: 2rem;
             margin: 1rem 0;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
         }
         
         .game-title {
@@ -43,7 +43,7 @@ st.markdown("""
         
         .game-subtitle {
             font-size: 1.3rem;
-            color: #6b7280;
+            color: #4b5563;
             text-align: center;
             margin-bottom: 2rem;
         }
@@ -120,7 +120,7 @@ st.markdown("""
         
         .timer {
             background: linear-gradient(135deg, #ef4444, #dc2626);
-            color: #1f2937 !important;
+            color: #ffffff !important;
             padding: 1rem;
             border-radius: 10px;
             text-align: center;
@@ -173,7 +173,7 @@ st.markdown("""
         
         .stButton > button {
             background: linear-gradient(135deg, #1e3c72, #2a5298);
-            color: #1f2937 !important;
+            color: #ffffff !important;
             border: none;
             border-radius: 10px;
             padding: 0.8rem 1.5rem;
@@ -247,12 +247,27 @@ st.markdown("""
         
         /* Fix button text color */
         .stButton > button > div {
-            color: #1f2937 !important;
+            color: #ffffff !important;
         }
         
         /* Fix any white text in Streamlit components */
         [data-testid="stText"], [data-testid="stMarkdown"] {
             color: #1f2937 !important;
+        }
+        
+        /* Ensure info boxes have proper contrast */
+        .stAlert {
+            color: #1f2937 !important;
+        }
+        
+        /* Fix any other potential white text */
+        * {
+            color: #1f2937 !important;
+        }
+        
+        /* Exception for buttons and timer */
+        .stButton > button, .timer {
+            color: #ffffff !important;
         }
     </style>
 """, unsafe_allow_html=True)
@@ -408,35 +423,24 @@ def calculate_confidence(evidence, suspects):
     
     return [round((score / total_score) * 100, 1) for score in scores]
 
-def initialize_session_state():
-    """Initialize all session state variables to prevent attribute errors"""
-    if 'game_state' not in st.session_state:
-        st.session_state.game_state = 'menu'
-    if 'current_level' not in st.session_state:
-        st.session_state.current_level = 0
-    if 'current_scene' not in st.session_state:
-        st.session_state.current_scene = 'intro'
-    if 'collected_evidence' not in st.session_state:
-        st.session_state.collected_evidence = []
-    if 'confidence' not in st.session_state:
-        st.session_state.confidence = []
-    if 'scores' not in st.session_state:
-        st.session_state.scores = {'accuracy': 0, 'speed': 0, 'integrity': 100}
-    if 'level_scores' not in st.session_state:
-        st.session_state.level_scores = []
-    if 'ethical_choice_made' not in st.session_state:
-        st.session_state.ethical_choice_made = False
-    if 'start_time' not in st.session_state:
-        st.session_state.start_time = None
-    if 'timer_start' not in st.session_state:
-        st.session_state.timer_start = None
-    if 'user_decision' not in st.session_state:
-        st.session_state.user_decision = None
-    if 'current_ethical_choice' not in st.session_state:
-        st.session_state.current_ethical_choice = None
+def reset_game_state():
+    """Reset all game state variables"""
+    st.session_state.game_state = 'menu'
+    st.session_state.current_level = 0
+    st.session_state.current_scene = 'intro'
+    st.session_state.collected_evidence = []
+    st.session_state.confidence = []
+    st.session_state.scores = {'accuracy': 0, 'speed': 0, 'integrity': 100}
+    st.session_state.level_scores = []
+    st.session_state.ethical_choice_made = False
+    st.session_state.start_time = None
+    st.session_state.timer_start = None
+    st.session_state.user_decision = None
+    st.session_state.current_ethical_choice = None
 
 # --- Initialize Session State ---
-initialize_session_state()
+if 'game_state' not in st.session_state:
+    reset_game_state()
 
 # --- Main Game Interface ---
 st.markdown('<div class="main-container">', unsafe_allow_html=True)
@@ -449,17 +453,8 @@ if st.session_state.game_state == 'menu':
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
         if st.button("🎮 Play Game", key="play_button"):
+            reset_game_state()
             st.session_state.game_state = 'playing'
-            st.session_state.current_level = 0
-            st.session_state.current_scene = 'intro'
-            st.session_state.collected_evidence = []
-            st.session_state.confidence = []
-            st.session_state.scores = {'accuracy': 0, 'speed': 0, 'integrity': 100}
-            st.session_state.ethical_choice_made = False
-            st.session_state.start_time = None
-            st.session_state.timer_start = None
-            st.session_state.user_decision = None
-            st.session_state.current_ethical_choice = None
             st.experimental_rerun()
         
         if st.button("📖 How to Play", key="how_to_play"):
@@ -496,17 +491,8 @@ elif st.session_state.game_state == 'instructions':
     """)
     
     if st.button("🚀 Start Investigation", key="start_investigation"):
+        reset_game_state()
         st.session_state.game_state = 'playing'
-        st.session_state.current_level = 0
-        st.session_state.current_scene = 'intro'
-        st.session_state.collected_evidence = []
-        st.session_state.confidence = []
-        st.session_state.scores = {'accuracy': 0, 'speed': 0, 'integrity': 100}
-        st.session_state.ethical_choice_made = False
-        st.session_state.start_time = None
-        st.session_state.timer_start = None
-        st.session_state.user_decision = None
-        st.session_state.current_ethical_choice = None
         st.experimental_rerun()
 
 # Main Game
@@ -548,8 +534,7 @@ elif st.session_state.game_state == 'playing':
             st.warning("📚 Keep practicing! Ethical inference takes time to master.")
         
         if st.button("🔄 Play Again", key="play_again_final"):
-            for key in list(st.session_state.keys()):
-                del st.session_state[key]
+            reset_game_state()
             st.experimental_rerun()
         
         st.markdown('</div>', unsafe_allow_html=True)
