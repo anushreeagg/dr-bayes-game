@@ -1,6 +1,6 @@
-# lost_painting_heist_adaptive.py
-# Deluxe + Adaptive Tutoring version of: The Lost Painting Heist
+# lost_painting_heist_adaptive_fixed.py
 # Streamlit game that teaches Bayesian inference + ethics with dynamic, context-aware coaching.
+# Fixed for older/newer Streamlit versions and cleaned of duplicate definitions / attr errors.
 
 import random
 from dataclasses import dataclass
@@ -21,6 +21,22 @@ st.set_page_config(
     initial_sidebar_state="collapsed",
 )
 
+# ------------------------------ Version-safe helpers ----------------------------------
+def ui_divider():
+    try:
+        st.divider()
+    except AttributeError:
+        st.markdown("---")
+
+def ui_progress(value: int, label: Optional[str] = None):
+    """Wrapper for st.progress to be compatible with older versions."""
+    try:
+        st.progress(value, text=label)
+    except TypeError:
+        st.progress(value)
+        if label:
+            st.caption(label)
+
 # A little CSS polish
 st.markdown(
     """
@@ -35,12 +51,6 @@ st.markdown(
     .tag-biased { background: #F97316; }
     .tag-unethical { background: #EF4444; }
     .tag-rare { background: #9333EA; }
-    .glass {
-        background: rgba(255,255,255,0.04);
-        border: 1px solid rgba(255,255,255,0.08);
-        border-radius: 12px;
-        padding: 1rem 1.25rem;
-    }
     .soft {
         background: rgba(255,255,255,0.06);
         border-radius: 8px; padding: 0.75rem 1rem; margin: .2rem 0;
@@ -334,13 +344,16 @@ def radar_chart(scores: Dict[str, float]):
         "angle":[angle[c] for c in cats]
     })
     spokes = alt.Chart(zero_df).mark_rule(stroke="#334155", strokeWidth=1).encode(
-        x="x:Q", y="y:Q", x2=alt.value(100*np.cos(np.deg2rad(zero_df["angle"]))),
+        x="x:Q", y="y:Q",
+        x2=alt.value(100*np.cos(np.deg2rad(zero_df["angle"]))),
         y2=alt.value(100*np.sin(np.deg2rad(zero_df["angle"])))
     )
-    circle_df = pd.DataFrame({"r":[25,50,75,100]})
-    circles = alt.Chart(circle_df).mark_circle(stroke="#475569", fillOpacity=0.0).encode(
+    # Simplify the circle ring (avoid transform_calculate that may break older Altair)
+    circles = alt.Chart(pd.DataFrame({"r":[25,50,75,100]})).mark_circle(
+        stroke="#475569", fillOpacity=0.0
+    ).encode(
         x=alt.value(0), y=alt.value(0), size="r:Q"
-    ).transform_calculate(size="pow(datum.r,2)")
+    )
     return (circles + spokes + polygon).properties(height=350)
 
 # ------------------------------ Adaptive Tutoring -------------------------------------
@@ -358,12 +371,10 @@ def push_tutor_message(key: str, title: str, body: str, show_math_button: bool =
     })
 
 def run_tutoring_triggers(event: str):
-    """Call after certain events to push context-aware hints."""
     g = st.session_state.g
     post = g["posteriors"]
     max_post = max(post.values()) if post else 0.0
 
-    # 1) Low confidence after 2+ rounds
     if g["round"] >= 2 and max_post < LOW_CONFIDENCE_THRESHOLD:
         push_tutor_message(
             "low_confidence_midgame",
@@ -373,7 +384,6 @@ def run_tutoring_triggers(event: str):
             show_math_button=True
         )
 
-    # 2) Low integrity after 3+ rounds
     if g["round"] >= 3 and g["integrity"] < LOW_INTEGRITY_THRESHOLD:
         push_tutor_message(
             "integrity_warning",
@@ -383,7 +393,6 @@ def run_tutoring_triggers(event: str):
             show_math_button=False
         )
 
-    # 3) Two invasive/biased in a row
     if len(g["evidence_log"]) >= TOO_MANY_INVASIVE_IN_ROW:
         last_two = g["evidence_log"][-TOO_MANY_INVASIVE_IN_ROW:]
         if all(ev["card"].source in ("RUMOR","INTERROGATION") for ev in last_two):
@@ -396,10 +405,8 @@ def run_tutoring_triggers(event: str):
             )
 
 def accuse_guard_with_check(guard: GuardID):
-    """Pre-accuse hook: show adaptive confirmation if confidence is low."""
     g = st.session_state.g
-    max_post = max(g["posteriors"].values())
-    # trigger a modal if low confidence or integrity is too low, to teach
+    max_post = max(g["posteriors"].values()) if g["posteriors"] else 0.0
     if (max_post < LOW_CONFIDENCE_THRESHOLD) or (g["integrity"] < LOW_INTEGRITY_THRESHOLD):
         g["pending_accuse"] = guard
         g["show_accuse_modal"] = True
@@ -410,7 +417,7 @@ def tutor_panel():
     g = st.session_state.g
     if not g["tutor_messages"]:
         return
-    for i, msg in enumerate(g["tutor_messages"]):
+    for i, msg in enumerate(list(g["tutor_messages"])):
         with st.container():
             st.markdown(
                 f"""
@@ -426,18 +433,18 @@ def tutor_panel():
                 if msg["show_math_button"]:
                     if st.button("Show math", key=f"math_{msg['key']}"):
                         g["show_math"] = True
+                        # don't pop this message so they can re-open again if needed
                         st.experimental_rerun()
             with cols[1]:
                 if st.button("Dismiss", key=f"dismiss_{msg['key']}"):
-                    g["tutor_messages"].pop(i)
+                    g["tutor_messages"].remove(msg)
                     st.experimental_rerun()
 
 def tutorial_modal():
     g = st.session_state.g
     if not g["show_tutorial"]:
         return
-    
-    # Use a simple centered container instead of a full-screen modal
+
     st.markdown(
         """
         <div style="
@@ -460,24 +467,22 @@ def tutorial_modal():
             </ul>
             <p>Balance accuracy, speed, and integrity. Good luck, detective.</p>
             <div style="text-align: center; margin-top: 2rem;">
-                <p style="font-size: 1.1rem; font-weight: 600; color: #6366F1;">Click the button below to start!</p>
+                <p style="font-size: 1.1rem; font-weight: 600; color: #6366F1;">Click a button below to start!</p>
             </div>
         </div>
         """,
         unsafe_allow_html=True
     )
-    
-    # Make the button more prominent and centered
-    col1, col2, col3 = st.columns([1, 2, 1])
-    with col2:
+
+    c1, c2, c3 = st.columns([1,2,1])
+    with c2:
         if st.button("🚀 Let's go!", key="start_game_button", use_container_width=True):
             g["show_tutorial"] = False
             g["step"] = 1
             st.experimental_rerun()
-    
-    # Add a close button as alternative
-    col1, col2, col3 = st.columns([1, 2, 1])
-    with col2:
+
+    c1, c2, c3 = st.columns([1,2,1])
+    with c2:
         if st.button("❌ Close", key="close_tutorial_button", use_container_width=True):
             g["show_tutorial"] = False
             g["step"] = 1
@@ -491,6 +496,7 @@ def ethics_modal():
     if not card:
         g["show_ethics_modal"] = False
         return
+
     st.markdown(
         f"""
         <div class="modal">
@@ -515,7 +521,7 @@ def ethics_modal():
                 g["used_ids"].discard(last["card"].id)
                 g["round"] -= 1
                 g["escape_risk"] = max(0, g["escape_risk"] - ESCAPE_RISK_INCREASE_PER_ROUND)
-                # recompute posteriors, integrity, caution from scratch:
+                # recompute from scratch
                 g["posteriors"] = g["priors"].copy()
                 g["integrity"] = START_INTEGRITY
                 g["caution_points"] = 0
@@ -530,7 +536,7 @@ def accuse_modal():
     g = st.session_state.g
     if not g["show_accuse_modal"]:
         return
-    max_post = max(g["posteriors"].values())
+    max_post = max(g["posteriors"].values()) if g["posteriors"] else 0.0
     st.markdown(
         f"""
         <div class="modal">
@@ -650,31 +656,31 @@ if g["step"] == 1:
         suspicion_chart(g["posteriors"])
     with c_top[1]:
         st.subheader("Integrity")
-        st.progress(int(g["integrity"]), text=f"{g['integrity']}/100")
+        ui_progress(int(g["integrity"]), f"{g['integrity']}/100")
     with c_top[2]:
         st.subheader("Escape Risk")
-        st.progress(int(g["escape_risk"]), text=f"{g['escape_risk']}%")
+        ui_progress(int(g["escape_risk"]), f"{g['escape_risk']}%")
 
     with st.expander("Show Bayesian math panel", expanded=False):
         g["show_math"] = st.checkbox("Show math & likelihood tables for each clue", value=g["show_math"])
 
-    st.divider()
+    ui_divider()
     st.subheader("Gather Evidence")
     e1, e2, e3 = st.columns(3)
     with e1:
-        if st.button("📹 CCTV Footage", help="Neutral but incomplete. No integrity penalty.", use_container_width=True):
+        if st.button("📹 CCTV Footage", use_container_width=True):
             add_evidence(pick_evidence("CCTV"))
             st.experimental_rerun()
     with e2:
-        if st.button("🗣️ Staff Rumors (−5 Integrity)", help="Biased but fast.", use_container_width=True):
+        if st.button("🗣️ Staff Rumors (−5 Integrity)", use_container_width=True):
             add_evidence(pick_evidence("RUMOR"))
             st.experimental_rerun()
     with e3:
-        if st.button("🚨 Aggressive Interrogation (−15 Integrity)", help="Informative but unethical.", use_container_width=True):
+        if st.button("🚨 Aggressive Interrogation (−15 Integrity)", use_container_width=True):
             add_evidence(pick_evidence("INTERROGATION"))
             st.experimental_rerun()
 
-    st.divider()
+    ui_divider()
     st.subheader("Evidence Log & Belief Updates")
     if not g["evidence_log"]:
         st.info("No evidence yet. Pull from CCTV, Rumors, or Interrogation above.")
@@ -682,11 +688,11 @@ if g["step"] == 1:
         for log in g["evidence_log"][::-1]:
             evidence_card_view(log)
 
-    st.divider()
+    ui_divider()
     st.subheader("Suspicion History")
     suspicion_history_chart()
 
-    st.divider()
+    ui_divider()
     st.subheader("Make your call")
     left, mid, right = st.columns([1,1,1])
     with left:
@@ -704,7 +710,7 @@ if g["step"] == 1:
 
 # DEBRIEF
 if g["step"] == 3 and g["done"]:
-    st.divider()
+    ui_divider()
     st.header("🧠 Verdict & Debrief")
     correct = (g["accused"] == g["guilty"])
     if correct:
@@ -731,7 +737,7 @@ if g["step"] == 3 and g["done"]:
         for a in g["achievement_flags"]:
             st.markdown(f"- **{a}**")
 
-    st.divider()
+    ui_divider()
     st.subheader("Reflection")
     st.markdown(
         """
@@ -741,7 +747,7 @@ if g["step"] == 3 and g["done"]:
 """
     )
 
-    st.divider()
+    ui_divider()
     st.button("🔁 New Run (random culprit & clues)", on_click=reset_game)
 
-st.markdown('<div class="footer-tip">vAdaptive — built with Streamlit, Altair, Pandas, NumPy. No external deps.</div>', unsafe_allow_html=True)
+st.markdown('<div class="footer-tip">vAdaptive (fixed) — Streamlit, Altair, Pandas, NumPy. No external deps.</div>', unsafe_allow_html=True)
