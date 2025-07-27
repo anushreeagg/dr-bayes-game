@@ -55,13 +55,14 @@ st.markdown(
     .scorebox span { font-size: .8rem; opacity: .8; display:block; margin-top: .25rem; }
     .modal {
         position: fixed; left:0; top:0; width:100%; height:100%;
-        background: rgba(0,0,0,.65); display: flex; justify-content: center; align-items: center;
+        background: rgba(0,0,0,.75); display: flex; justify-content: center; align-items: center;
         z-index: 9999;
-        backdrop-filter: blur(2px);
+        backdrop-filter: blur(3px);
     }
     .modal-inner {
-        background: #1E293B; padding: 2rem; border-radius: 16px; max-width: 720px; color: #E2E8F0;
-        border: 1px solid rgba(255,255,255,0.06);
+        background: #1E293B; padding: 2.5rem; border-radius: 16px; max-width: 720px; color: #E2E8F0;
+        border: 1px solid rgba(255,255,255,0.08);
+        box-shadow: 0 20px 40px rgba(0,0,0,0.3);
     }
     .step-dot { width: 10px; height: 10px; border-radius: 50%; background: #334155; display: inline-block; margin-right: 4px; }
     .step-dot.active { background: #6366F1; }
@@ -444,19 +445,34 @@ def tutorial_modal():
             <ul>
                 <li><b>Inference</b>: Your suspicion meter updates as you collect evidence (Bayesian-style).</li>
                 <li><b>Ethics</b>: Rumors & interrogations raise certainty quickly but harm integrity.</li>
-                <li><b>Pressure</b>: Escape risk rises every round — wait too long and the painting’s gone.</li>
-                <li><b>Adaptive Tutor</b>: I’ll jump in with tips if you’re taking risky, low-confidence, or unethical paths.</li>
+                <li><b>Pressure</b>: Escape risk rises every round — wait too long and the painting's gone.</li>
+                <li><b>Adaptive Tutor</b>: I'll jump in with tips if you're taking risky, low-confidence, or unethical paths.</li>
             </ul>
             <p>Balance accuracy, speed, and integrity. Good luck, detective.</p>
+            <div style="text-align: center; margin-top: 2rem;">
+                <p style="font-size: 1.1rem; font-weight: 600; color: #6366F1;">Click the button below to start!</p>
+            </div>
           </div>
         </div>
         """,
         unsafe_allow_html=True
     )
-    if st.button("Let's go!"):
-        g["show_tutorial"] = False
-        g["step"] = 1
-        st.experimental_rerun()
+    
+    # Make the button more prominent and centered
+    col1, col2, col3 = st.columns([1, 2, 1])
+    with col2:
+        if st.button("🚀 Let's go!", key="start_game_button", use_container_width=True):
+            g["show_tutorial"] = False
+            g["step"] = 1
+            st.experimental_rerun()
+    
+    # Add a close button as alternative
+    col1, col2, col3 = st.columns([1, 2, 1])
+    with col2:
+        if st.button("❌ Close", key="close_tutorial_button", use_container_width=True):
+            g["show_tutorial"] = False
+            g["step"] = 1
+            st.experimental_rerun()
 
 def ethics_modal():
     g = st.session_state.g
