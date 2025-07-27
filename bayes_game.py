@@ -1,15 +1,14 @@
 import streamlit as st
 import numpy as np
-import pandas as pd
-from scipy.stats import norm
-import plotly.graph_objects as go
-import plotly.express as px
+import time
+import random
+from datetime import datetime
 
 # --- Page Configuration ---
 st.set_page_config(
-    page_title="🧠 Bayes Detective Academy", 
-    page_icon="🧠", 
-    layout="centered",
+    page_title="🕵️ Truth Detective: The Ethics of Inference", 
+    page_icon="🕵️", 
+    layout="wide",
     initial_sidebar_state="collapsed"
 )
 
@@ -19,7 +18,7 @@ st.markdown("""
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
         
         .stApp {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
             font-family: 'Inter', sans-serif;
         }
         
@@ -28,13 +27,13 @@ st.markdown("""
             border-radius: 20px;
             padding: 2rem;
             margin: 1rem 0;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.2);
         }
         
         .game-title {
-            font-size: 2.8rem;
+            font-size: 3rem;
             font-weight: 700;
-            background: linear-gradient(135deg, #667eea, #764ba2);
+            background: linear-gradient(135deg, #1e3c72, #2a5298);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             text-align: center;
@@ -42,512 +41,670 @@ st.markdown("""
         }
         
         .game-subtitle {
-            font-size: 1.2rem;
+            font-size: 1.3rem;
             color: #6b7280;
             text-align: center;
             margin-bottom: 2rem;
         }
         
-        .round-header {
+        .level-header {
             background: linear-gradient(135deg, #f3f4f6, #e5e7eb);
             padding: 1.5rem;
             border-radius: 15px;
             margin-bottom: 1.5rem;
-            border-left: 5px solid #667eea;
+            border-left: 5px solid #1e3c72;
         }
         
-        .round-title {
-            font-size: 1.5rem;
+        .level-title {
+            font-size: 1.8rem;
             font-weight: 600;
             color: #1f2937;
             margin-bottom: 0.5rem;
         }
         
-        .scenario-text {
-            font-size: 1.1rem;
+        .scene-text {
+            font-size: 1.2rem;
             color: #4b5563;
             line-height: 1.6;
         }
         
-        .measurement-card {
-            background: linear-gradient(135deg, #fef3c7, #fed7aa);
-            padding: 1.5rem;
-            border-radius: 15px;
-            margin: 1rem 0;
-            text-align: center;
-            border: 2px solid #f59e0b;
-        }
-        
-        .measurement-value {
-            font-size: 2.5rem;
-            font-weight: 700;
-            color: #d97706;
-            margin-bottom: 0.5rem;
-        }
-        
-        .measurement-label {
-            font-size: 1.1rem;
-            color: #92400e;
-            font-weight: 500;
-        }
-        
-        .clue-box {
-            background: linear-gradient(135deg, #dbeafe, #bfdbfe);
-            padding: 1rem;
+        .confidence-bar {
+            background: #e5e7eb;
             border-radius: 10px;
-            margin: 1rem 0;
-            border-left: 4px solid #3b82f6;
+            height: 30px;
+            margin: 0.5rem 0;
+            overflow: hidden;
+            position: relative;
         }
         
-        .clue-text {
-            font-size: 1rem;
-            color: #1e40af;
-            font-weight: 500;
-        }
-        
-        .score-display {
-            background: linear-gradient(135deg, #d1fae5, #a7f3d0);
-            padding: 1rem;
+        .confidence-fill {
+            height: 100%;
             border-radius: 10px;
-            text-align: center;
-            margin-bottom: 1.5rem;
-        }
-        
-        .score-text {
-            font-size: 1.2rem;
+            transition: width 0.5s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
             font-weight: 600;
-            color: #065f46;
         }
         
-        .result-correct {
-            background: linear-gradient(135deg, #d1fae5, #a7f3d0);
-            padding: 1.5rem;
-            border-radius: 15px;
-            border-left: 5px solid #10b981;
-            margin: 1rem 0;
+        .evidence-card {
+            background: linear-gradient(135deg, #fef3c7, #fed7aa);
+            padding: 1rem;
+            border-radius: 10px;
+            margin: 0.5rem 0;
+            border: 2px solid #f59e0b;
+            animation: slideIn 0.3s ease;
         }
         
-        .result-incorrect {
+        @keyframes slideIn {
+            from { transform: translateX(-100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        
+        .ethical-popup {
             background: linear-gradient(135deg, #fee2e2, #fecaca);
             padding: 1.5rem;
             border-radius: 15px;
-            border-left: 5px solid #ef4444;
+            border: 3px solid #ef4444;
+            margin: 1rem 0;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+        }
+        
+        .timer {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            color: white;
+            padding: 1rem;
+            border-radius: 10px;
+            text-align: center;
+            font-size: 1.5rem;
+            font-weight: 700;
             margin: 1rem 0;
         }
         
-        .final-score {
-            background: linear-gradient(135deg, #fef3c7, #fed7aa);
-            padding: 2rem;
-            border-radius: 20px;
+        .scoreboard {
+            background: linear-gradient(135deg, #d1fae5, #a7f3d0);
+            padding: 1.5rem;
+            border-radius: 15px;
+            border: 3px solid #10b981;
+            margin: 1rem 0;
+        }
+        
+        .score-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #065f46;
             text-align: center;
-            margin: 2rem 0;
-            border: 3px solid #f59e0b;
+            margin-bottom: 1rem;
+        }
+        
+        .score-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1rem;
+        }
+        
+        .score-item {
+            text-align: center;
+            padding: 1rem;
+            background: white;
+            border-radius: 10px;
+            border: 2px solid #10b981;
+        }
+        
+        .score-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #065f46;
+        }
+        
+        .score-label {
+            font-size: 0.9rem;
+            color: #6b7280;
+            font-weight: 500;
         }
         
         .stButton > button {
-            background: linear-gradient(135deg, #667eea, #764ba2);
+            background: linear-gradient(135deg, #1e3c72, #2a5298);
             color: white;
             border: none;
             border-radius: 10px;
-            padding: 0.7rem 1.5rem;
+            padding: 0.8rem 1.5rem;
             font-weight: 600;
             font-size: 1rem;
             transition: all 0.3s ease;
-            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+            box-shadow: 0 4px 15px rgba(30, 60, 114, 0.3);
         }
         
         .stButton > button:hover {
             transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+            box-shadow: 0 6px 20px rgba(30, 60, 114, 0.4);
+        }
+        
+        .suspect-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+        
+        .suspect-card {
+            background: white;
+            border: 3px solid #e5e7eb;
+            border-radius: 15px;
+            padding: 1.5rem;
+            text-align: center;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        
+        .suspect-card:hover {
+            border-color: #1e3c72;
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+        
+        .suspect-avatar {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+        
+        .suspect-name {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 0.5rem;
+        }
+        
+        .evidence-area {
+            background: linear-gradient(135deg, #f8fafc, #f1f5f9);
+            padding: 1.5rem;
+            border-radius: 15px;
+            border: 2px solid #e2e8f0;
+            margin: 1rem 0;
+            min-height: 200px;
+        }
+        
+        .evidence-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 1rem;
+            text-align: center;
         }
     </style>
 """, unsafe_allow_html=True)
 
-# --- Game Configuration ---
-SCENARIOS = [
+# --- Game Data ---
+LEVELS = [
     {
-        "title": "🌡️ Emergency Room Fever Check",
-        "description": "A patient walks into the ER with complaints of feeling unwell. You take their temperature with a digital thermometer.",
-        "group_a": {"name": "Has Fever", "mean": 39.2, "std": 0.5, "color": "#ef4444"},
-        "group_b": {"name": "No Fever", "mean": 37.0, "std": 0.8, "color": "#10b981"},
-        "unit": "°C",
-        "measurement_name": "Body Temperature",
-        "clue_func": lambda x: "🔥 The thermometer is showing very high!" if x > 38.5 else "😊 Temperature seems normal range",
-        "context": "Normal body temperature is around 37°C. Fever typically starts around 38°C."
+        "name": "The Cookie Jar Mystery",
+        "scene": "Cozy kitchen with a jar on the counter, crumbs scattered, 3 chefs smiling suspiciously",
+        "intro": "A cookie jar is empty! Which chef took the cookies? Collect evidence and decide carefully.",
+        "suspects": [
+            {"name": "Chef A", "avatar": "👨‍🍳", "color": "#ef4444", "evidence": ["chocolate chip", "vanilla", "mixed"]},
+            {"name": "Chef B", "avatar": "👩‍🍳", "color": "#10b981", "evidence": ["raisin", "oatmeal", "mixed"]},
+            {"name": "Chef C", "avatar": "🧑‍🍳", "color": "#3b82f6", "evidence": ["sugar", "butter", "mixed"]}
+        ],
+        "evidence_types": ["chocolate chip", "raisin", "vanilla", "oatmeal", "sugar", "butter", "mixed"],
+        "culprit": None,  # Will be set randomly
+        "ethical_choices": []
     },
     {
-        "title": "🩸 Blood Test Analysis",
-        "description": "A routine blood test shows hemoglobin levels. You need to determine if this indicates anemia.",
-        "group_a": {"name": "Anemia", "mean": 9.5, "std": 1.0, "color": "#ef4444"},
-        "group_b": {"name": "Normal", "mean": 14.0, "std": 1.5, "color": "#10b981"},
-        "unit": "g/dL",
-        "measurement_name": "Hemoglobin Level",
-        "clue_func": lambda x: "⚠️ The blood count looks concerning" if x < 12 else "✅ Blood levels appear healthy",
-        "context": "Normal hemoglobin: 12-16 g/dL for women, 14-18 g/dL for men. Below 12 may indicate anemia."
+        "name": "The Park Theft",
+        "scene": "Park bench, 3 suspects in different colored jackets",
+        "intro": "A wallet has been stolen! Evidence can be misleading—watch out for bias.",
+        "suspects": [
+            {"name": "Alex", "avatar": "👤", "color": "#ef4444", "evidence": ["red jacket", "tall person", "running"]},
+            {"name": "Jamie", "avatar": "👤", "color": "#10b981", "evidence": ["blue jacket", "medium height", "walking"]},
+            {"name": "Casey", "avatar": "👤", "color": "#3b82f6", "evidence": ["green jacket", "short person", "standing"]}
+        ],
+        "evidence_types": ["red jacket", "blue jacket", "green jacket", "tall person", "medium height", "short person", "running", "walking", "standing"],
+        "culprit": None,
+        "ethical_choices": [
+            {
+                "trigger": 3,  # After 3 evidence collections
+                "question": "Police claim Casey has a past record. This may be bias. Use this info?",
+                "options": [
+                    {"text": "Use It (Fast but Biased)", "integrity_penalty": -20, "confidence_boost": 0.4},
+                    {"text": "Ignore (Ethical)", "integrity_penalty": 0, "confidence_boost": 0}
+                ]
+            }
+        ]
     },
     {
-        "title": "💓 Heart Rate Monitor",
-        "description": "A patient's heart rate is measured during a routine checkup. Determine if this indicates a heart condition.",
-        "group_a": {"name": "Tachycardia", "mean": 110, "std": 8, "color": "#ef4444"},
-        "group_b": {"name": "Normal HR", "mean": 72, "std": 12, "color": "#10b981"},
-        "unit": "BPM",
-        "measurement_name": "Heart Rate",
-        "clue_func": lambda x: "💨 Heart is beating quite fast!" if x > 90 else "💗 Steady, normal rhythm",
-        "context": "Normal resting heart rate: 60-100 BPM. Tachycardia is typically >100 BPM."
+        "name": "Social Media Scandal",
+        "scene": "Newsroom with flashing 'BREAKING NEWS'",
+        "intro": "A rumor about a politician is trending. Is it true or false?",
+        "suspects": [
+            {"name": "True", "avatar": "✅", "color": "#10b981", "evidence": ["official statement", "verified source", "fact check"]},
+            {"name": "False", "avatar": "❌", "color": "#ef4444", "evidence": ["debunked", "fake news", "retraction"]}
+        ],
+        "evidence_types": ["tweets", "local news", "official statement", "verified source", "fact check", "debunked", "fake news", "retraction"],
+        "culprit": None,
+        "ethical_choices": [
+            {
+                "trigger": 2,
+                "question": "Do you publish your story now, based only on trending tweets?",
+                "options": [
+                    {"text": "Publish Now (Fast but High Risk)", "integrity_penalty": -30, "speed_bonus": 20},
+                    {"text": "Wait (Delays but Ensures Credibility)", "integrity_penalty": 0, "speed_bonus": 0}
+                ]
+            }
+        ]
     },
     {
-        "title": "🩺 Blood Pressure Reading",
-        "description": "Taking a blood pressure measurement to check for hypertension during a health screening.",
-        "group_a": {"name": "Hypertension", "mean": 155, "std": 10, "color": "#ef4444"},
-        "group_b": {"name": "Normal BP", "mean": 120, "std": 15, "color": "#10b981"},
-        "unit": "mmHg",
-        "measurement_name": "Systolic BP",
-        "clue_func": lambda x: "⬆️ Pressure reading is quite elevated" if x > 140 else "👍 Blood pressure in good range",
-        "context": "Normal systolic BP: <120 mmHg. Hypertension: ≥140 mmHg."
+        "name": "The Lab Experiment",
+        "scene": "Science lab, test tubes, patients waiting",
+        "intro": "You are testing a new medicine. Does it work?",
+        "suspects": [
+            {"name": "Medicine Works", "avatar": "💊", "color": "#10b981", "evidence": ["young patients improve", "older patients improve", "mixed results"]},
+            {"name": "Doesn't Work", "avatar": "🚫", "color": "#ef4444", "evidence": ["young patients worsen", "older patients worsen", "no effect"]}
+        ],
+        "evidence_types": ["young patients improve", "young patients worsen", "older patients improve", "older patients worsen", "mixed results", "no effect"],
+        "culprit": None,
+        "ethical_choices": [
+            {
+                "trigger": 2,
+                "question": "Results are only from young patients. Publish results now?",
+                "options": [
+                    {"text": "Publish Early (Unethical)", "integrity_penalty": -25, "speed_bonus": 15},
+                    {"text": "Test More Groups (Slower but Fair)", "integrity_penalty": 0, "speed_bonus": 0}
+                ]
+            }
+        ]
     },
     {
-        "title": "🧪 Glucose Test",
-        "description": "A fasting blood glucose test to screen for diabetes. The lab results just came in.",
-        "group_a": {"name": "Diabetes", "mean": 180, "std": 25, "color": "#ef4444"},
-        "group_b": {"name": "Normal", "mean": 90, "std": 15, "color": "#10b981"},
-        "unit": "mg/dL",
-        "measurement_name": "Blood Glucose",
-        "clue_func": lambda x: "📈 Glucose levels are very high!" if x > 140 else "📊 Sugar levels look normal",
-        "context": "Normal fasting glucose: 70-100 mg/dL. Diabetes: ≥126 mg/dL fasting."
+        "name": "The City Fire",
+        "scene": "City skyline with buildings, smoke rising",
+        "intro": "Which building started the fire? Act fast to save others.",
+        "suspects": [
+            {"name": "Building A", "avatar": "🏢", "color": "#ef4444", "evidence": ["smoke from A", "witness saw sparks A", "alarm A"]},
+            {"name": "Building B", "avatar": "🏢", "color": "#10b981", "evidence": ["smoke from B", "witness saw sparks B", "alarm B"]},
+            {"name": "Building C", "avatar": "🏢", "color": "#3b82f6", "evidence": ["smoke from C", "witness saw sparks C", "alarm C"]}
+        ],
+        "evidence_types": ["smoke from A", "smoke from B", "smoke from C", "witness saw sparks A", "witness saw sparks B", "witness saw sparks C", "alarm A", "alarm B", "alarm C"],
+        "culprit": None,
+        "ethical_choices": [
+            {
+                "trigger": 2,
+                "question": "Evacuate Building A now (low confidence) or gather more evidence?",
+                "options": [
+                    {"text": "Evacuate Now (Fast)", "integrity_penalty": -15, "speed_bonus": 25},
+                    {"text": "Wait for More Info", "integrity_penalty": 0, "speed_bonus": 0}
+                ]
+            }
+        ],
+        "timer": 60  # 60 seconds for urgency
     }
 ]
 
-def calculate_bayes_probability(observation, mean_a, std_a, mean_b, std_b, prior_a=0.5):
-    """Calculate posterior probability using Bayes' theorem"""
-    likelihood_a = norm.pdf(observation, mean_a, std_a)
-    likelihood_b = norm.pdf(observation, mean_b, std_b)
-    
-    posterior_a = (likelihood_a * prior_a) / (likelihood_a * prior_a + likelihood_b * (1 - prior_a))
-    return posterior_a
+# --- Helper Functions ---
+def create_confidence_bar(name, percentage, color):
+    return f"""
+    <div style="margin: 1rem 0;">
+        <div style="font-weight: 600; margin-bottom: 0.5rem; color: #1f2937;">{name}</div>
+        <div class="confidence-bar">
+            <div class="confidence-fill" style="background: {color}; width: {percentage}%;">
+                {percentage:.0f}%
+            </div>
+        </div>
+    </div>
+    """
 
-def create_distribution_plot(scenario, observation):
-    """Create an interactive plot showing the distributions and observation"""
-    x_range = np.linspace(
-        min(scenario["group_a"]["mean"] - 3*scenario["group_a"]["std"], 
-            scenario["group_b"]["mean"] - 3*scenario["group_b"]["std"]),
-        max(scenario["group_a"]["mean"] + 3*scenario["group_a"]["std"], 
-            scenario["group_b"]["mean"] + 3*scenario["group_b"]["std"]),
-        300
-    )
+def create_evidence_card(evidence):
+    return f"""
+    <div class="evidence-card">
+        <div style="font-weight: 600; color: #92400e;">🔍 Found: {evidence}</div>
+    </div>
+    """
+
+def create_ethical_popup(question, options):
+    return f"""
+    <div class="ethical-popup">
+        <h3 style="color: #dc2626; margin-bottom: 1rem;">⚖️ Ethical Decision Required</h3>
+        <p style="font-size: 1.1rem; margin-bottom: 1.5rem;">{question}</p>
+    </div>
+    """
+
+def calculate_confidence(evidence, suspects):
+    """Calculate confidence percentages based on collected evidence"""
+    total_evidence = len(evidence)
+    if total_evidence == 0:
+        return [33.33, 33.33, 33.34] if len(suspects) == 3 else [50, 50]
     
-    y_a = norm.pdf(x_range, scenario["group_a"]["mean"], scenario["group_a"]["std"])
-    y_b = norm.pdf(x_range, scenario["group_b"]["mean"], scenario["group_b"]["std"])
+    scores = [0] * len(suspects)
     
-    fig = go.Figure()
+    for ev in evidence:
+        for i, suspect in enumerate(suspects):
+            if ev in suspect["evidence"]:
+                scores[i] += 1
     
-    # Add distribution curves
-    fig.add_trace(go.Scatter(
-        x=x_range, y=y_a,
-        mode='lines',
-        name=scenario["group_a"]["name"],
-        line=dict(color=scenario["group_a"]["color"], width=3),
-        fill='tonexty'
-    ))
+    total_score = sum(scores)
+    if total_score == 0:
+        return [100/len(suspects)] * len(suspects)
     
-    fig.add_trace(go.Scatter(
-        x=x_range, y=y_b,
-        mode='lines',
-        name=scenario["group_b"]["name"],
-        line=dict(color=scenario["group_b"]["color"], width=3),
-        fill='tozeroy'
-    ))
-    
-    # Add observation line
-    fig.add_vline(
-        x=observation,
-        line_dash="dash",
-        line_color="black",
-        line_width=3,
-        annotation_text=f"Your observation: {observation:.1f} {scenario['unit']}"
-    )
-    
-    fig.update_layout(
-        title="Distribution of Values for Each Group",
-        xaxis_title=f"{scenario['measurement_name']} ({scenario['unit']})",
-        yaxis_title="Probability Density",
-        height=400,
-        showlegend=True,
-        template="plotly_white"
-    )
-    
-    return fig
+    return [round((score / total_score) * 100, 1) for score in scores]
 
 # --- Session State Initialization ---
 if 'game_state' not in st.session_state:
-    st.session_state.game_state = 'playing'
-    st.session_state.current_round = 0
-    st.session_state.score = 0
-    st.session_state.round_data = None
-    st.session_state.user_guess = None
-    st.session_state.show_result = False
-    st.session_state.show_explanation = False
+    st.session_state.game_state = 'menu'
+    st.session_state.current_level = 0
+    st.session_state.current_scene = 'intro'
+    st.session_state.collected_evidence = []
+    st.session_state.confidence = []
+    st.session_state.scores = {'accuracy': 0, 'speed': 0, 'integrity': 100}
+    st.session_state.level_scores = []
+    st.session_state.ethical_choice_made = False
+    st.session_state.start_time = None
+    st.session_state.timer_start = None
 
 # --- Main Game Interface ---
 st.markdown('<div class="main-container">', unsafe_allow_html=True)
 
-# Header
-st.markdown('<h1 class="game-title">🧠 Bayes Detective Academy</h1>', unsafe_allow_html=True)
-st.markdown('<p class="game-subtitle">Master the art of probabilistic reasoning through medical diagnosis!</p>', unsafe_allow_html=True)
+# Main Menu
+if st.session_state.game_state == 'menu':
+    st.markdown('<h1 class="game-title">🕵️ Truth Detective: The Ethics of Inference</h1>', unsafe_allow_html=True)
+    st.markdown('<p class="game-subtitle">Master the art of ethical decision-making through interactive investigations!</p>', unsafe_allow_html=True)
+    
+    col1, col2, col3 = st.columns([1, 2, 1])
+    with col2:
+        if st.button("🎮 Play Game", key="play_button"):
+            st.session_state.game_state = 'playing'
+            st.session_state.current_level = 0
+            st.session_state.current_scene = 'intro'
+            st.experimental_rerun()
+        
+        if st.button("📖 How to Play", key="how_to_play"):
+            st.session_state.game_state = 'instructions'
+            st.experimental_rerun()
 
-# Score Display
-if st.session_state.current_round > 0:
-    st.markdown(f'''
-        <div class="score-display">
-            <div class="score-text">
-                Round {st.session_state.current_round} of {len(SCENARIOS)} | 
-                Score: {st.session_state.score}/{st.session_state.current_round - (1 if st.session_state.show_result else 0)}
+# Instructions
+elif st.session_state.game_state == 'instructions':
+    st.markdown('<h1 class="game-title">📖 How to Play</h1>', unsafe_allow_html=True)
+    
+    st.markdown("""
+    ### 🎯 Your Mission
+    You are a detective solving cases while learning about ethical inference in probability!
+    
+    ### 🎮 Game Mechanics
+    1. **Evidence Collection**: Click to gather clues and update your confidence
+    2. **Ethical Decisions**: Face moral dilemmas that test your integrity
+    3. **Final Decision**: Choose your suspect based on the evidence
+    4. **Scoring**: Earn points for accuracy, speed, and ethical choices
+    
+    ### 📊 Scoring System
+    - **Accuracy**: Correctly identifying the culprit
+    - **Speed**: Making decisions efficiently (fewer evidence collections)
+    - **Integrity**: Making ethical choices throughout the investigation
+    
+    ### 🎪 Levels
+    1. **Cookie Jar Mystery**: Basic evidence collection
+    2. **Park Theft**: Introduction to bias
+    3. **Social Media Scandal**: Credibility vs speed
+    4. **Lab Experiment**: Sampling bias
+    5. **City Fire**: Urgency vs accuracy
+    
+    Ready to become a Truth Detective?
+    """)
+    
+    if st.button("🚀 Start Investigation", key="start_investigation"):
+        st.session_state.game_state = 'playing'
+        st.session_state.current_level = 0
+        st.session_state.current_scene = 'intro'
+        st.experimental_rerun()
+
+# Main Game
+elif st.session_state.game_state == 'playing':
+    if st.session_state.current_level >= len(LEVELS):
+        # Game Complete
+        final_accuracy = (st.session_state.scores['accuracy'] / len(LEVELS)) * 100
+        final_speed = st.session_state.scores['speed']
+        final_integrity = st.session_state.scores['integrity']
+        
+        st.markdown('<h1 class="game-title">🎉 Investigation Complete!</h1>', unsafe_allow_html=True)
+        
+        st.markdown(f'''
+        <div class="scoreboard">
+            <div class="score-title">Final Detective Report</div>
+            <div class="score-grid">
+                <div class="score-item">
+                    <div class="score-value">{final_accuracy:.0f}%</div>
+                    <div class="score-label">Accuracy</div>
+                </div>
+                <div class="score-item">
+                    <div class="score-value">{final_speed}</div>
+                    <div class="score-label">Speed Bonus</div>
+                </div>
+                <div class="score-item">
+                    <div class="score-value">{final_integrity}</div>
+                    <div class="score-label">Integrity</div>
+                </div>
             </div>
         </div>
-    ''', unsafe_allow_html=True)
-
-# Game Over Screen
-if st.session_state.current_round >= len(SCENARIOS) and st.session_state.show_result:
-    final_percentage = (st.session_state.score / len(SCENARIOS)) * 100
-    
-    st.markdown(f'''
-        <div class="final-score">
-            <h2>🎉 Game Complete!</h2>
-            <h3>Final Score: {st.session_state.score}/{len(SCENARIOS)} ({final_percentage:.0f}%)</h3>
-            <p>You've completed your training at the Bayes Detective Academy!</p>
-        </div>
-    ''', unsafe_allow_html=True)
-    
-    if final_percentage >= 80:
-        st.balloons()
-        st.markdown("### 🏆 Excellent! You have a strong intuition for Bayesian reasoning!")
-    elif final_percentage >= 60:
-        st.markdown("### 👍 Good job! You're getting the hang of probabilistic thinking!")
-    else:
-        st.markdown("### 📚 Keep practicing! Bayesian reasoning takes time to master.")
-    
-    if st.button("🔄 Play Again", key="play_again"):
-        for key in list(st.session_state.keys()):
-            del st.session_state[key]
-        st.experimental_rerun()
-    
-    st.markdown('</div>', unsafe_allow_html=True)
-    st.stop()
-
-# Initialize round data if needed
-if st.session_state.round_data is None and st.session_state.current_round < len(SCENARIOS):
-    scenario = SCENARIOS[st.session_state.current_round]
-    
-    # Randomly choose which group the observation comes from
-    true_group = np.random.choice(['a', 'b'])
-    if true_group == 'a':
-        observation = np.random.normal(scenario["group_a"]["mean"], scenario["group_a"]["std"])
-    else:
-        observation = np.random.normal(scenario["group_b"]["mean"], scenario["group_b"]["std"])
-    
-    # Calculate true posterior probability
-    true_prob = calculate_bayes_probability(
-        observation,
-        scenario["group_a"]["mean"], scenario["group_a"]["std"],
-        scenario["group_b"]["mean"], scenario["group_b"]["std"]
-    )
-    
-    st.session_state.round_data = {
-        'scenario': scenario,
-        'observation': observation,
-        'true_probability': true_prob,
-        'true_group': true_group
-    }
-
-# Current Round Display
-if st.session_state.current_round < len(SCENARIOS) and st.session_state.round_data:
-    round_data = st.session_state.round_data
-    scenario = round_data['scenario']
-    observation = round_data['observation']
-    
-    # Round Header
-    st.markdown(f'''
-        <div class="round-header">
-            <div class="round-title">{scenario["title"]}</div>
-            <div class="scenario-text">{scenario["description"]}</div>
-        </div>
-    ''', unsafe_allow_html=True)
-    
-    # Context Information
-    st.info(f"📋 **Medical Context:** {scenario['context']}")
-    
-    # Measurement Display
-    st.markdown(f'''
-        <div class="measurement-card">
-            <div class="measurement-value">{observation:.1f} {scenario["unit"]}</div>
-            <div class="measurement-label">{scenario["measurement_name"]}</div>
-        </div>
-    ''', unsafe_allow_html=True)
-    
-    # Clue
-    clue_text = scenario["clue_func"](observation)
-    st.markdown(f'''
-        <div class="clue-box">
-            <div class="clue-text">💡 Clinical Observation: {clue_text}</div>
-        </div>
-    ''', unsafe_allow_html=True)
-    
-    # Question
-    st.markdown("### 🤔 Your Task:")
-    st.markdown(f"**What's the probability that this patient has {scenario['group_a']['name'].lower()}?**")
-    st.markdown("*Move the slider to indicate your best guess (0% = definitely no, 100% = definitely yes)*")
-    
-    # User Input
-    if not st.session_state.show_result:
-        user_guess = st.slider(
-            "Your probability estimate:",
-            min_value=0,
-            max_value=100,
-            value=50,
-            step=1,
-            format="%d%%"
-        )
+        ''', unsafe_allow_html=True)
         
-        col1, col2, col3 = st.columns([1, 2, 1])
+        if final_accuracy >= 80 and final_integrity >= 80:
+            st.balloons()
+            st.success("🏆 Outstanding! You're a master of ethical inference!")
+        elif final_accuracy >= 60 and final_integrity >= 60:
+            st.info("👍 Good work! You're developing strong detective skills!")
+        else:
+            st.warning("📚 Keep practicing! Ethical inference takes time to master.")
+        
+        if st.button("🔄 Play Again", key="play_again_final"):
+            for key in list(st.session_state.keys()):
+                del st.session_state[key]
+            st.experimental_rerun()
+        
+        st.markdown('</div>', unsafe_allow_html=True)
+        st.stop()
+    
+    level = LEVELS[st.session_state.current_level]
+    
+    # Initialize level if needed
+    if level["culprit"] is None:
+        level["culprit"] = random.randint(0, len(level["suspects"]) - 1)
+    
+    # Level Header
+    st.markdown(f'''
+    <div class="level-header">
+        <div class="level-title">Level {st.session_state.current_level + 1}: {level["name"]}</div>
+        <div class="scene-text">{level["scene"]}</div>
+    </div>
+    ''', unsafe_allow_html=True)
+    
+    # Intro Scene
+    if st.session_state.current_scene == 'intro':
+        st.markdown(f"### 🎭 Scene Setup")
+        st.info(f"**{level['intro']}**")
+        
+        # Show suspects
+        st.markdown("### 👥 Suspects")
+        suspect_cols = st.columns(len(level["suspects"]))
+        for i, suspect in enumerate(level["suspects"]):
+            with suspect_cols[i]:
+                st.markdown(f'''
+                <div class="suspect-card">
+                    <div class="suspect-avatar">{suspect["avatar"]}</div>
+                    <div class="suspect-name">{suspect["name"]}</div>
+                </div>
+                ''', unsafe_allow_html=True)
+        
+        if st.button("🔍 Start Collecting Evidence", key=f"start_evidence_{st.session_state.current_level}"):
+            st.session_state.current_scene = 'evidence'
+            st.session_state.collected_evidence = []
+            st.session_state.confidence = [100/len(level["suspects"])] * len(level["suspects"])
+            st.session_state.ethical_choice_made = False
+            st.session_state.start_time = time.time()
+            if level.get("timer"):
+                st.session_state.timer_start = time.time()
+            st.experimental_rerun()
+    
+    # Evidence Collection Scene
+    elif st.session_state.current_scene == 'evidence':
+        # Timer for urgent scenarios
+        if level.get("timer") and st.session_state.timer_start:
+            elapsed = time.time() - st.session_state.timer_start
+            remaining = max(0, level["timer"] - elapsed)
+            
+            if remaining <= 0:
+                st.error("⏰ Time's up! You must make a decision now!")
+                st.session_state.current_scene = 'decision'
+                st.experimental_rerun()
+            else:
+                st.markdown(f'''
+                <div class="timer">
+                    ⏰ Time Remaining: {int(remaining)} seconds
+                </div>
+                ''', unsafe_allow_html=True)
+        
+        # Evidence Area
+        st.markdown("### 🔍 Evidence Collection")
+        
+        evidence_cols = st.columns([1, 2, 1])
+        
+        with evidence_cols[0]:
+            st.markdown("### 📊 Confidence Levels")
+            for i, suspect in enumerate(level["suspects"]):
+                st.markdown(create_confidence_bar(suspect["name"], st.session_state.confidence[i], suspect["color"]), unsafe_allow_html=True)
+        
+        with evidence_cols[1]:
+            st.markdown("### 🕵️ Collected Evidence")
+            evidence_area = st.container()
+            
+            if st.session_state.collected_evidence:
+                for evidence in st.session_state.collected_evidence:
+                    evidence_area.markdown(create_evidence_card(evidence), unsafe_allow_html=True)
+            else:
+                evidence_area.info("No evidence collected yet. Click 'Collect Evidence' to start!")
+            
+            if st.button("🔍 Collect Evidence", key=f"collect_evidence_{len(st.session_state.collected_evidence)}"):
+                # Generate new evidence
+                new_evidence = random.choice(level["evidence_types"])
+                st.session_state.collected_evidence.append(new_evidence)
+                
+                # Update confidence
+                st.session_state.confidence = calculate_confidence(st.session_state.collected_evidence, level["suspects"])
+                
+                # Check for ethical choices
+                if not st.session_state.ethical_choice_made and level["ethical_choices"]:
+                    for choice in level["ethical_choices"]:
+                        if len(st.session_state.collected_evidence) == choice["trigger"]:
+                            st.session_state.current_scene = 'ethical_choice'
+                            st.session_state.current_ethical_choice = choice
+                            st.experimental_rerun()
+                
+                st.experimental_rerun()
+        
+        with evidence_cols[2]:
+            st.markdown("### 🎯 Actions")
+            if st.button("🤔 Make Decision", key=f"make_decision_{st.session_state.current_level}"):
+                st.session_state.current_scene = 'decision'
+                st.experimental_rerun()
+    
+    # Ethical Choice Scene
+    elif st.session_state.current_scene == 'ethical_choice':
+        choice = st.session_state.current_ethical_choice
+        
+        st.markdown(create_ethical_popup(choice["question"], choice["options"]), unsafe_allow_html=True)
+        
+        col1, col2 = st.columns(2)
+        with col1:
+            if st.button(choice["options"][0]["text"], key=f"ethical_choice_1_{st.session_state.current_level}"):
+                st.session_state.scores["integrity"] += choice["options"][0]["integrity_penalty"]
+                st.session_state.scores["speed"] += choice["options"][0].get("speed_bonus", 0)
+                st.session_state.ethical_choice_made = True
+                st.session_state.current_scene = 'evidence'
+                st.experimental_rerun()
+        
         with col2:
-            if st.button("🔍 Submit Diagnosis", key=f"submit_{st.session_state.current_round}"):
-                st.session_state.user_guess = user_guess
-                st.session_state.show_result = True
+            if st.button(choice["options"][1]["text"], key=f"ethical_choice_2_{st.session_state.current_level}"):
+                st.session_state.scores["integrity"] += choice["options"][1]["integrity_penalty"]
+                st.session_state.scores["speed"] += choice["options"][1].get("speed_bonus", 0)
+                st.session_state.ethical_choice_made = True
+                st.session_state.current_scene = 'evidence'
                 st.experimental_rerun()
     
-    # Show Results
-    if st.session_state.show_result:
-        true_prob_percent = round_data['true_probability'] * 100
-        user_guess_percent = st.session_state.user_guess
-        error = abs(true_prob_percent - user_guess_percent)
+    # Decision Scene
+    elif st.session_state.current_scene == 'decision':
+        st.markdown("### 🎯 Final Decision")
+        st.info("**Do you have enough evidence? Who is the culprit?**")
         
-        # Scoring (generous scoring to encourage learning)
-        if error <= 10:
-            points = 1
-            accuracy_msg = "🎯 Excellent! Very close!"
-        elif error <= 20:
-            points = 0.5
-            accuracy_msg = "👍 Good estimate!"
+        # Show final confidence levels
+        st.markdown("### 📊 Final Confidence Levels")
+        for i, suspect in enumerate(level["suspects"]):
+            st.markdown(create_confidence_bar(suspect["name"], st.session_state.confidence[i], suspect["color"]), unsafe_allow_html=True)
+        
+        # Decision buttons
+        st.markdown("### 🤔 Your Verdict")
+        suspect_cols = st.columns(len(level["suspects"]))
+        for i, suspect in enumerate(level["suspects"]):
+            with suspect_cols[i]:
+                if st.button(f"🎯 {suspect['name']}", key=f"decision_{i}_{st.session_state.current_level}"):
+                    st.session_state.current_scene = 'outcome'
+                    st.session_state.user_decision = i
+                    st.experimental_rerun()
+    
+    # Outcome Scene
+    elif st.session_state.current_scene == 'outcome':
+        correct = st.session_state.user_decision == level["culprit"]
+        
+        if correct:
+            st.success(f"🎉 Correct! {level['suspects'][level['culprit']]['name']} was the culprit!")
+            st.session_state.scores["accuracy"] += 1
         else:
-            points = 0
-            accuracy_msg = "📚 Keep learning!"
+            st.error(f"❌ Wrong! {level['suspects'][level['culprit']]['name']} was the actual culprit.")
         
-        st.session_state.score += points
+        # Calculate speed bonus
+        if st.session_state.start_time:
+            time_taken = time.time() - st.session_state.start_time
+            evidence_count = len(st.session_state.collected_evidence)
+            speed_bonus = max(0, 10 - evidence_count)  # Bonus for fewer evidence collections
+            st.session_state.scores["speed"] += speed_bonus
         
-        # Results display
-        if points > 0:
-            st.markdown(f'''
-                <div class="result-correct">
-                    <h4>{accuracy_msg}</h4>
-                    <p><strong>Your guess:</strong> {user_guess_percent}%</p>
-                    <p><strong>Actual probability:</strong> {true_prob_percent:.1f}%</p>
-                    <p><strong>Difference:</strong> {error:.1f} percentage points</p>
+        # Show level scoreboard
+        st.markdown(f'''
+        <div class="scoreboard">
+            <div class="score-title">Level {st.session_state.current_level + 1} Results</div>
+            <div class="score-grid">
+                <div class="score-item">
+                    <div class="score-value">{'✅' if correct else '❌'}</div>
+                    <div class="score-label">Accuracy</div>
                 </div>
-            ''', unsafe_allow_html=True)
-        else:
-            st.markdown(f'''
-                <div class="result-incorrect">
-                    <h4>{accuracy_msg}</h4>
-                    <p><strong>Your guess:</strong> {user_guess_percent}%</p>
-                    <p><strong>Actual probability:</strong> {true_prob_percent:.1f}%</p>
-                    <p><strong>Difference:</strong> {error:.1f} percentage points</p>
+                <div class="score-item">
+                    <div class="score-value">{len(st.session_state.collected_evidence)}</div>
+                    <div class="score-label">Evidence Used</div>
                 </div>
-            ''', unsafe_allow_html=True)
+                <div class="score-item">
+                    <div class="score-value">{st.session_state.scores['integrity']}</div>
+                    <div class="score-label">Integrity</div>
+                </div>
+            </div>
+        </div>
+        ''', unsafe_allow_html=True)
         
-        # Show explanation button
-        if not st.session_state.show_explanation:
-            if st.button("📊 Show Bayesian Explanation", key=f"explain_{st.session_state.current_round}"):
-                st.session_state.show_explanation = True
-                st.experimental_rerun()
+        # Learning tip
+        if level["name"] == "The Cookie Jar Mystery":
+            st.info("💡 **Learning Tip:** Collecting more evidence increases your confidence in your decision!")
+        elif level["name"] == "The Park Theft":
+            st.info("💡 **Learning Tip:** Be careful of biased information that might mislead your investigation!")
+        elif level["name"] == "Social Media Scandal":
+            st.info("💡 **Learning Tip:** Credible sources are more reliable than fast, unverified information!")
+        elif level["name"] == "The Lab Experiment":
+            st.info("💡 **Learning Tip:** Representative sampling leads to fairer and more accurate conclusions!")
+        elif level["name"] == "The City Fire":
+            st.info("💡 **Learning Tip:** Sometimes you must balance speed with accuracy in urgent situations!")
         
-        # Bayesian Explanation
-        if st.session_state.show_explanation:
-            st.markdown("### 🧮 How Bayes' Theorem Calculated This:")
-            
-            # Show the distributions
-            fig = create_distribution_plot(scenario, observation)
-            st.plotly_chart(fig, use_container_width=True)
-            
-            # Mathematical explanation
-            likelihood_a = norm.pdf(observation, scenario["group_a"]["mean"], scenario["group_a"]["std"])
-            likelihood_b = norm.pdf(observation, scenario["group_b"]["mean"], scenario["group_b"]["std"])
-            
-            st.markdown(f"""
-            **Bayes' Theorem in Action:**
-            
-            1. **Prior beliefs:** We assumed 50% chance for each condition initially
-            2. **Likelihood of observation:**
-               - If {scenario["group_a"]["name"]}: {likelihood_a:.4f}
-               - If {scenario["group_b"]["name"]}: {likelihood_b:.4f}
-            3. **Posterior probability:** {true_prob_percent:.1f}% chance of {scenario["group_a"]["name"]}
-            
-            The formula: P(Condition|Test) = P(Test|Condition) × P(Condition) / P(Test)
-            """)
-        
-        # Next button
-        if st.session_state.current_round < len(SCENARIOS) - 1:
-            if st.button("➡️ Next Patient", key=f"next_{st.session_state.current_round}"):
-                st.session_state.current_round += 1
-                st.session_state.round_data = None
-                st.session_state.show_result = False
-                st.session_state.show_explanation = False
-                st.session_state.user_guess = None
-                st.experimental_rerun()
-        else:
-            if st.button("🏁 See Final Results", key="final_results"):
-                st.session_state.current_round += 1
-                st.experimental_rerun()
-
-# Welcome Screen for New Players
-if st.session_state.current_round == 0 and st.session_state.round_data is None:
-    st.markdown("""
-    ### 🎯 Welcome to Bayes Detective Academy!
-    
-    You're training to become a master of probabilistic reasoning! In each round, you'll:
-    
-    1. 👀 **Observe** a medical measurement from a patient
-    2. 🧠 **Think** about what this measurement tells you
-    3. 🎯 **Estimate** the probability of a medical condition
-    4. 📊 **Learn** how Bayes' Theorem calculated the exact answer
-    
-    **Your Goal:** Develop intuition for how evidence updates our beliefs!
-    
-    Ready to start your training?
-    """)
-    
-    if st.button("🚀 Begin Training", key="start_game"):
-        st.session_state.current_round = 0
-        st.experimental_rerun()
+        if st.button("➡️ Next Level", key=f"next_level_{st.session_state.current_level}"):
+            st.session_state.current_level += 1
+            st.session_state.current_scene = 'intro'
+            st.experimental_rerun()
 
 st.markdown('</div>', unsafe_allow_html=True)
-
-# --- Instructions for Deployment ---
-st.markdown("---")
-with st.expander("🚀 Deployment Instructions"):
-    st.markdown("""
-    ## How to Deploy This App:
-    
-    ### 1. Local Development:
-    ```bash
-    pip install streamlit numpy scipy plotly pandas
-    streamlit run bayes_inference_game.py
-    ```
-    
-    ### 2. Deploy to Streamlit Cloud:
-    1. Create a GitHub repository
-    2. Add this file as `app.py` or `streamlit_app.py`
-    3. Create `requirements.txt`:
-       ```
-       streamlit
-       numpy
-       scipy
-       plotly
-       pandas
-       ```
-    4. Go to [streamlit.io/cloud](https://streamlit.io/cloud)
-    5. Connect your GitHub repo
-    6. Deploy!
-    
-    ### 3. Alternative: Deploy to Heroku, Railway, or other platforms
-    - Most Python hosting platforms support Streamlit apps
-    - Just ensure the requirements.txt includes all dependencies
-    """)
